@@ -1,4 +1,10 @@
-# RaspberryJuice
+# TCCRaspberryJuice
+
+This is a prototype Bukkit plugin which expands on the Minecraft Pi Socket API for the use of TCC in programming lessons.
+
+This code is based off of work [zhuowei](https://github.com/zhuowei) and other contributors in the RaspberryJuice project.
+
+## Old Readme
 
 A Bukkit plugin which implements the Minecraft Pi Socket API.
 
