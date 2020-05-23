@@ -1,11 +1,14 @@
 package net.zhuoweizhang.raspberryjuice;
 
 import java.net.InetSocketAddress;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.Dictionary;
+import java.util.Hashtable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -37,6 +40,10 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 	public List<RemoteSession> sessions;
 
 	public Player hostPlayer = null;
+
+    public Dictionary<String, Integer> perPlayerCommandQuota = new Hashtable<String, Integer>();
+
+    public Integer commandQuota;
 
 	private LocationType locationType;
 
@@ -170,6 +177,16 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 		return null;
 	}
 
+    public Player getPlayerAtAddress(InetAddress address) {
+        if (address == null) return null;
+        for(Player player : Bukkit.getOnlinePlayers()) {
+            if(address.equals(player.getAddress().getAddress())) {
+                return player
+            }
+        }
+        return null;
+    }
+
 	public Player getHostPlayer() {
 		if (hostPlayer != null) return hostPlayer;
 		for(Player player : Bukkit.getOnlinePlayers()) {
@@ -227,6 +244,8 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
 	private class TickHandler implements Runnable {
 		public void run() {
+            commandQuota = 0;
+            
 			Iterator<RemoteSession> sI = sessions.iterator();
 			while(sI.hasNext()) {
 				RemoteSession s = sI.next();
