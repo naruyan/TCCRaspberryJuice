@@ -45,6 +45,18 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
     public Integer commandQuota;
 
+    public Integer sustainedCommandQuota;
+
+    public Integer maxCommandsPerPlayer = 100;
+
+    public Integer maxCommandsPerTick = 1000;
+
+    public Integer maxSustainedCommands = 5000;
+
+    public Integer sustainedTicks = 100;
+
+    public Integer ticksSustained = 0;
+
 	private LocationType locationType;
 
 	private HitClickType hitClickType;
@@ -245,7 +257,8 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 	private class TickHandler implements Runnable {
 		public void run() {
             commandQuota = 0;
-            
+            perPlayerCommandQuota.replaceAll((name, quota) -> 0);
+
 			Iterator<RemoteSession> sI = sessions.iterator();
 			while(sI.hasNext()) {
 				RemoteSession s = sI.next();

@@ -61,8 +61,6 @@ public class RemoteSession {
 	
 	protected ArrayDeque<ProjectileHitEvent> projectileHitQueue = new ArrayDeque<ProjectileHitEvent>();
 
-	private int maxCommandsPerTick = 9000;
-
 	private boolean closed = false;
 
 	private Player attachedPlayer = null;
@@ -149,16 +147,40 @@ public class RemoteSession {
 					throw new IllegalArgumentException("Unknown location type " + locationType);
 			}
 		}
-		int processedCount = 0;
 		String message;
+        Server server = plugin.getServer();
 		while ((message = inQueue.poll()) != null) {
 			handleLine(message);
-			processedCount++;
-			if (processedCount >= maxCommandsPerTick) {
-				plugin.getLogger().warning("Over " + maxCommandsPerTick +
+
+			plugin.commandQuota++;
+            if (plugin.commandQuota >= plugin.maxCommandsPerTick) {
+				plugin.getLogger().warning("Over " + plugin.maxCommandsPerTick +
 					" commands were queued - deferring " + inQueue.size() + " to next tick");
+                server.broadcastMessage("Too many commands on the server right now, deferring");
 				break;
-			}
+            }
+
+			plugin.sustainedCommandQuota++;
+            if (plugin.sustainedCommandQuota >= plugin.maxSustainedCommands) {
+				plugin.getLogger().warning("Over " + plugin.maxSustainedCommands +
+					" commands were queued over a long period - deferring " + inQueue.size() + " to next tick");
+                server.broadcastMessage("Too many commands on the server over a period of time, deferring");
+				break;
+            }
+
+            if (attachedPlayer != null)
+            {
+                plugin.perPlayerCommandQuota.put(attachedPlayer.getPlayerListName(), 
+                        plugin.perPlayerCommandQuota.getOrDefault(attachedPlayer.getPlayerListName(), 0) + 1);
+                if (plugin.perPlayerCommandQuota.get(attachedPlayer.getPlayerListName()) >= plugin.maxCommandsPerPlayer) {
+                    plugin.getLogger().warning(attachedPlayer.getPlayerListName() + " has over " 
+                            + plugin.maxCommandsPerPlayer + " commands queued - deferring "
+                            + inQueue.size() + " to next tick");
+                    server.broadcastMessage(attachedPlayer.getPlayerListName()
+                            + " has too many commands on the server right now, deferring");
+                    break;
+                }
+            }
 		}
 
 		if (!running && inQueue.size() <= 0) {
@@ -757,11 +779,14 @@ public class RemoteSession {
 		maxY = pos1.getBlockY() >= pos2.getBlockY() ? pos1.getBlockY() : pos2.getBlockY();
 		minZ = pos1.getBlockZ() < pos2.getBlockZ() ? pos1.getBlockZ() : pos2.getBlockZ();
 		maxZ = pos1.getBlockZ() >= pos2.getBlockZ() ? pos1.getBlockZ() : pos2.getBlockZ();
+        
+        int totalBlocks = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
 
-		for (int x = minX; x <= maxX; ++x) {
-			for (int z = minZ; z <= maxZ; ++z) {
-				for (int y = minY; y <= maxY; ++y) {
-					updateBlock(world, x, y, z, blockType, data);
+        for(int y = maxY; y >= minY; y--) {
+            for(int z = maxZ; z >= minZ; z--) {
+                for(int x = maxX; x >= minX; x++) {
+                    String command = "world.setBlock(" + x + "," + y + "," + z + "," + blockType + "," + data + ")";
+                    inQueue.push(command);
 				}
 			}
 		}
