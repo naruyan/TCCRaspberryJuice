@@ -43,19 +43,21 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
     public Dictionary<String, Integer> perPlayerCommandQuota = new Hashtable<String, Integer>();
 
-    public Integer commandQuota;
+    public int commandQuota = 0;
 
-    public Integer sustainedCommandQuota;
+    public int sustainedCommandQuota = 0;
 
-    public Integer maxCommandsPerPlayer = 100;
+    public int maxCommandsPerPlayer = 100;
 
-    public Integer maxCommandsPerTick = 1000;
+    public int maxCommandsPerTick = 1000;
 
-    public Integer maxSustainedCommands = 5000;
+    public int maxSustainedCommands = 5000;
 
-    public Integer sustainedTicks = 100;
+    public int sustainedTicks = 100;
 
-    public Integer ticksSustained = 0;
+    public int ticksSustained = 0;
+
+    public int maxDistance = 1535;
 
 	private LocationType locationType;
 
@@ -95,6 +97,12 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 			hitClickType = HitClickType.valueOf("RIGHT");
 		}
 		getLogger().info("Using " + hitClickType.name() + " clicks for hits");
+
+        maxCommandsPerTick = this.getConfig().getInt("maxcommandspertick");
+        maxCommandsPerPlayer = this.getConfig().getInt("maxcommandsperplayer");
+        maxSustainedCommands = this.getConfig().getInt("maxsustainedcommands");
+        sustainedTicks = this.getConfig().getInt("sustainedticks");
+        maxDistance = this.getConfig().getInt("maxdistance");
 
 		//setup session array
 		sessions = new ArrayList<RemoteSession>();
@@ -193,7 +201,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
         if (address == null) return null;
         for(Player player : Bukkit.getOnlinePlayers()) {
             if(address.equals(player.getAddress().getAddress())) {
-                return player
+                return player;
             }
         }
         return null;
@@ -258,7 +266,11 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 		public void run() {
             commandQuota = 0;
             perPlayerCommandQuota.replaceAll((name, quota) -> 0);
-
+            sustainedTicks++;
+            if (sustainedTicks >= ticksSustained) {
+                sustainedTicks = 0;
+                sustainedCommandQuota = 0;
+            }
 			Iterator<RemoteSession> sI = sessions.iterator();
 			while(sI.hasNext()) {
 				RemoteSession s = sI.next();

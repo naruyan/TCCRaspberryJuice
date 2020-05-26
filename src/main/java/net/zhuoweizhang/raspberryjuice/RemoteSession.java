@@ -223,32 +223,57 @@ public class RemoteSession {
 
 			// world.getBlock
             } else if (c.equals("world.getBlock")) {
-				Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				send(world.getBlockTypeIdAt(loc));
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    send(world.getBlockTypeIdAt(loc));
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+					send("Fail");
+                }
 				
 			// world.getBlocks
 			} else if (c.equals("world.getBlocks")) {
-				Location loc1 = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
-				send(getBlocks(loc1, loc2));
+                if (distanceWithinLimit(args[0], args[1], args[2]) 
+                        && distanceWithinLimit(args[3], args[4], args[5])) {
+                    Location loc1 = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
+                    send(getBlocks(loc1, loc2));
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+					send("Fail");
+                }
 				
 			// world.getBlockWithData
 			} else if (c.equals("world.getBlockWithData")) {
-				Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				send(world.getBlockTypeIdAt(loc) + "," + world.getBlockAt(loc).getData());
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    send(world.getBlockTypeIdAt(loc) + "," + world.getBlockAt(loc).getData());
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+					send("Fail");
+                }
 				
 			// world.setBlock
 			} else if (c.equals("world.setBlock")) {
-				Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				updateBlock(world, loc, Integer.parseInt(args[3]), (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    updateBlock(world, loc, Integer.parseInt(args[3]), (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+                }
 				
 			// world.setBlocks
 			} else if (c.equals("world.setBlocks")) {
-				Location loc1 = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
-				int blockType = Integer.parseInt(args[6]);
-				byte data = args.length > 7? Byte.parseByte(args[7]) : (byte) 0;
-				setCuboid(loc1, loc2, blockType, data);
+                if (distanceWithinLimit(args[0], args[1], args[2]) 
+                        && distanceWithinLimit(args[3], args[4], args[5])) {
+                    Location loc1 = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
+                    int blockType = Integer.parseInt(args[6]);
+                    byte data = args.length > 7? Byte.parseByte(args[7]) : (byte) 0;
+                    setCuboid(loc1, loc2, blockType, data);
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+                }
 				
 			// world.getPlayerIds
 			} else if (c.equals("world.getPlayerIds")) {
@@ -379,14 +404,18 @@ public class RemoteSession {
 				
 			// player.setTile
 			} else if (c.equals("player.setTile")) {
-				String x = args[0], y = args[1], z = args[2];
-				Player currentPlayer = getCurrentPlayer();
-				//get players current location, so when they are moved we will use the same pitch and yaw (rotation)
-                if (currentPlayer == null) {
-                    plugin.getLogger().info("No player online.");
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    String x = args[0], y = args[1], z = args[2];
+                    Player currentPlayer = getCurrentPlayer();
+                    //get players current location, so when they are moved we will use the same pitch and yaw (rotation)
+                    if (currentPlayer == null) {
+                        plugin.getLogger().info("No player online.");
+                    } else {
+                        Location loc = currentPlayer.getLocation();
+                        currentPlayer.teleport(parseRelativeBlockLocation(x, y, z, loc.getPitch(), loc.getYaw()));
+                    }
                 } else {
-                    Location loc = currentPlayer.getLocation();
-                    currentPlayer.teleport(parseRelativeBlockLocation(x, y, z, loc.getPitch(), loc.getYaw()));
+                    server.broadcastMessage("Block too far away, command failed.");
                 }
 				
 			// player.getAbsPos
@@ -401,17 +430,21 @@ public class RemoteSession {
 				
 			// player.setAbsPos
 			} else if (c.equals("player.setAbsPos")) {
-				String x = args[0], y = args[1], z = args[2];
-				Player currentPlayer = getCurrentPlayer();
-				//get players current location, so when they are moved we will use the same pitch and yaw (rotation)
-                if (currentPlayer == null) {
-                    plugin.getLogger().info("No player online.");
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    String x = args[0], y = args[1], z = args[2];
+                    Player currentPlayer = getCurrentPlayer();
+                    //get players current location, so when they are moved we will use the same pitch and yaw (rotation)
+                    if (currentPlayer == null) {
+                        plugin.getLogger().info("No player online.");
+                    } else {
+                        Location loc = currentPlayer.getLocation();
+                        loc.setX(Double.parseDouble(x));
+                        loc.setY(Double.parseDouble(y));
+                        loc.setZ(Double.parseDouble(z));
+                        currentPlayer.teleport(loc);
+                    }
                 } else {
-                    Location loc = currentPlayer.getLocation();
-                    loc.setX(Double.parseDouble(x));
-                    loc.setY(Double.parseDouble(y));
-                    loc.setZ(Double.parseDouble(z));
-                    currentPlayer.teleport(loc);
+                    server.broadcastMessage("Block too far away, command failed.");
                 }
 
 			// player.getPos
@@ -426,14 +459,18 @@ public class RemoteSession {
 
 			// player.setPos
 			} else if (c.equals("player.setPos")) {
-				String x = args[0], y = args[1], z = args[2];
-				Player currentPlayer = getCurrentPlayer();
-				//get players current location, so when they are moved we will use the same pitch and yaw (rotation)
-                if (currentPlayer == null) {
-                    plugin.getLogger().info("No player online.");
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    String x = args[0], y = args[1], z = args[2];
+                    Player currentPlayer = getCurrentPlayer();
+                    //get players current location, so when they are moved we will use the same pitch and yaw (rotation)
+                    if (currentPlayer == null) {
+                        plugin.getLogger().info("No player online.");
+                    } else {
+                        Location loc = currentPlayer.getLocation();
+                        currentPlayer.teleport(parseRelativeLocation(x, y, z, loc.getPitch(), loc.getYaw()));
+                    }
                 } else {
-                    Location loc = currentPlayer.getLocation();
-                    currentPlayer.teleport(parseRelativeLocation(x, y, z, loc.getPitch(), loc.getYaw()));
+                    server.broadcastMessage("Block too far away, command failed.");
                 }
 
 			// player.setDirection
@@ -579,28 +616,32 @@ public class RemoteSession {
 				
 			// entity.getTile
 			} else if (c.equals("entity.getTile")) {
-				//get entity based on id
-				Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
-				if (entity != null) {
-					send(blockLocationToRelative(entity.getLocation()));
-				} else {
-					plugin.getLogger().info("Entity [" + args[0] + "] not found.");
-					send("Fail");
-				}
+                //get entity based on id
+                Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
+                if (entity != null) {
+                    send(blockLocationToRelative(entity.getLocation()));
+                } else {
+                    plugin.getLogger().info("Entity [" + args[0] + "] not found.");
+                    send("Fail");
+                }
 				
 			// entity.setTile
 			} else if (c.equals("entity.setTile")) {
-				String x = args[1], y = args[2], z = args[3];
-				//get entity based on id
-				Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
-				if (entity != null) {
-					//get entity's current location, so when they are moved we will use the same pitch and yaw (rotation)
-					Location loc = entity.getLocation();
-					entity.teleport(parseRelativeBlockLocation(x, y, z, loc.getPitch(), loc.getYaw()));
-				} else {
-					plugin.getLogger().info("Entity [" + args[0] + "] not found.");
-					send("Fail");
-				}
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    String x = args[1], y = args[2], z = args[3];
+                    //get entity based on id
+                    Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
+                    if (entity != null) {
+                        //get entity's current location, so when they are moved we will use the same pitch and yaw (rotation)
+                        Location loc = entity.getLocation();
+                        entity.teleport(parseRelativeBlockLocation(x, y, z, loc.getPitch(), loc.getYaw()));
+                    } else {
+                        plugin.getLogger().info("Entity [" + args[0] + "] not found.");
+                        send("Fail");
+                    }
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+                }
 
 			// entity.getPos
 			} else if (c.equals("entity.getPos")) {
@@ -616,17 +657,20 @@ public class RemoteSession {
 			
 			// entity.setPos
 			} else if (c.equals("entity.setPos")) {
-				String x = args[1], y = args[2], z = args[3];
-				//get entity based on id
-				Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
-				if (entity != null) {
-					//get entity's current location, so when they are moved we will use the same pitch and yaw (rotation)
-					Location loc = entity.getLocation();
-					entity.teleport(parseRelativeLocation(x, y, z, loc.getPitch(), loc.getYaw()));
-				} else {
-					plugin.getLogger().info("Entity [" + args[0] + "] not found.");
-					send("Fail");
-				}
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    String x = args[1], y = args[2], z = args[3];
+                    //get entity based on id
+                    Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
+                    if (entity != null) {
+                        //get entity's current location, so when they are moved we will use the same pitch and yaw (rotation)
+                        Location loc = entity.getLocation();
+                        entity.teleport(parseRelativeLocation(x, y, z, loc.getPitch(), loc.getYaw()));
+                    } else {
+                        plugin.getLogger().info("Entity [" + args[0] + "] not found.");
+                    }
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+                }
 
 			// entity.setDirection
 			} else if (c.equals("entity.setDirection")) {
@@ -717,30 +761,39 @@ public class RemoteSession {
 				
 			// world.setSign
 			} else if (c.equals("world.setSign")) {
-				Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				Block thisBlock = world.getBlockAt(loc);
-				//blockType should be 68 for wall sign or 63 for standing sign
-				int blockType = Integer.parseInt(args[3]);	
-				//facing direction for wall sign : 2=north, 3=south, 4=west, 5=east
-				//rotation 0 - to 15 for standing sign : 0=south, 4=west, 8=north, 12=east
-				byte blockData = Byte.parseByte(args[4]); 
-				if ((thisBlock.getTypeId() != blockType) || (thisBlock.getData() != blockData)) {
-					thisBlock.setTypeIdAndData(blockType, blockData, true);
-				}
-				//plugin.getLogger().info("Creating sign at " + loc);
-				if ( thisBlock.getState() instanceof Sign ) {
-					Sign sign = (Sign) thisBlock.getState();
-					for ( int i = 5; i-5 < 4 && i < args.length; i++) {
-						sign.setLine(i-5, args[i]);
-					}
-					sign.update();
-				}
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    Block thisBlock = world.getBlockAt(loc);
+                    //blockType should be 68 for wall sign or 63 for standing sign
+                    int blockType = Integer.parseInt(args[3]);	
+                    //facing direction for wall sign : 2=north, 3=south, 4=west, 5=east
+                    //rotation 0 - to 15 for standing sign : 0=south, 4=west, 8=north, 12=east
+                    byte blockData = Byte.parseByte(args[4]); 
+                    if ((thisBlock.getTypeId() != blockType) || (thisBlock.getData() != blockData)) {
+                        thisBlock.setTypeIdAndData(blockType, blockData, true);
+                    }
+                    //plugin.getLogger().info("Creating sign at " + loc);
+                    if ( thisBlock.getState() instanceof Sign ) {
+                        Sign sign = (Sign) thisBlock.getState();
+                        for ( int i = 5; i-5 < 4 && i < args.length; i++) {
+                            sign.setLine(i-5, args[i]);
+                        }
+                        sign.update();
+                    }
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+                }
 			
 			// world.spawnEntity
 			} else if (c.equals("world.spawnEntity")) {
-				Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
-				Entity entity = world.spawnEntity(loc, EntityType.fromId(Integer.parseInt(args[3])));
-				send(entity.getEntityId());
+                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                    Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                    Entity entity = world.spawnEntity(loc, EntityType.fromId(Integer.parseInt(args[3])));
+                    send(entity.getEntityId());
+                } else {
+                    server.broadcastMessage("Block too far away, command failed.");
+                    send("Fail");
+                }
 
 			// world.getEntityTypes
 			} else if (c.equals("world.getEntityTypes")) {
@@ -912,6 +965,22 @@ public class RemoteSession {
 	private Location parseLocation(World world, int x, int y, int z, int originX, int originY, int originZ) {
 		return new Location(world, originX + x, originY + y, originZ + z);
 	}
+
+    private boolean distanceWithinLimit(double x, double y, double z) {
+        Player player = getCurrentPlayer();
+        if (player != null) {
+            Location loc = player.getLocation();
+            if (Math.abs(loc.getX() - x) <= plugin.maxDistance 
+                    && Math.abs(loc.getZ() - z) <= plugin.maxDistance) {
+                return true;
+            }
+        }
+        if (Math.abs(origin.getX() - x) <= plugin.maxDistance
+                && Math.abs(origin.getZ() - z) <= plugin.maxDistance){
+            return true;
+        }
+        return false;
+    }
 
 	private double getDistance(Entity ent1, Entity ent2) {
 		if (ent1 == null || ent2 == null)

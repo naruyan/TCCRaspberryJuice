@@ -11,3 +11,18 @@ location: RELATIVE
 
 # Determine whether hit events are triggered by LEFT clicks, RIGHT clicks or BOTH
 hitclick: RIGHT
+
+# Determine the maxinum number of commands that can be executed in a single tick
+maxcommandspertick: 1000
+
+# Determine the maxinum number of commands that can be executed in a single tick by a single player
+maxcommandsperplayer: 100
+
+# Determine the maxinum number of commands that can be executed over a sustained period
+maxsustainedcommands: 5000
+
+# Determine the number of ticks per sustained period
+sustainedticks: 100
+
+# Determine the maximum radius from spawn or the executing player, blocks may be set or be teleported too
+maxdistance: 1535
