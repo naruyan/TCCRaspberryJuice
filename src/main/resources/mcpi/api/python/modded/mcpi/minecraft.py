@@ -46,6 +46,18 @@ class CmdPositioner:
         s = self.conn.sendReceive(self.pkg + b".getPos", id)
         return Vec3(*list(map(float, s.split(","))))
 
+    def getPosX(self, id):
+        vec = getPos(id)
+        return vec.x
+
+    def getPosY(self, id):
+        vec = getPos(id)
+        return vec.y
+
+    def getPosZ(self, id):
+        vec = getPos(id)
+        return vec.z
+
     def setPos(self, id, *args):
         """Set entity position (entityId:int, x,y,z)"""
         self.conn.send(self.pkg + b".setPos", id, args)
@@ -54,6 +66,18 @@ class CmdPositioner:
         """Get entity tile position (entityId:int) => Vec3"""
         s = self.conn.sendReceive(self.pkg + b".getTile", id)
         return Vec3(*list(map(int, s.split(","))))
+
+    def getTilePosX(self, id):
+        vec = getTilePos(id)
+        return vec.x
+
+    def getTilePosY(self, id):
+        vec = getTilePos(id)
+        return vec.y
+
+    def getTilePosZ(self, id):
+        vec = getTilePos(id)
+        return vec.z
 
     def setTilePos(self, id, *args):
         """Set entity tile position (entityId:int) => Vec3"""
@@ -151,10 +175,22 @@ class CmdPlayer(CmdPositioner):
 
     def getPos(self):
         return CmdPositioner.getPos(self, [])
+    def getPosX(self):
+        return CmdPositioner.getPosX(self, [])
+    def getPosY(self):
+        return CmdPositioner.getPosY(self, [])
+    def getPosZ(self):
+        return CmdPositioner.getPosZ(self, [])
     def setPos(self, *args):
         return CmdPositioner.setPos(self, [], args)
     def getTilePos(self):
         return CmdPositioner.getTilePos(self, [])
+    def getTilePosX(self):
+        return CmdPositioner.getTilePosX(self, [])
+    def getTilePosY(self):
+        return CmdPositioner.getTilePosY(self, [])
+    def getTilePosZ(self):
+        return CmdPositioner.getTilePosZ(self, [])
     def setTilePos(self, *args):
         return CmdPositioner.setTilePos(self, [], args)
     def setDirection(self, *args):

@@ -126,6 +126,8 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
             maxSustainedBlocks.put(blockLimitList.get(i), blockLimits.get(i));
         }
 
+        this.getCommand("mcpi").setExecutor(new McpiCommandExecutor(this));
+
 		//setup session array
 		sessions = new ArrayList<RemoteSession>();
 		
