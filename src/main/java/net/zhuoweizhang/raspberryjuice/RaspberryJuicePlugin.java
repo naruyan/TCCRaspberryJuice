@@ -25,6 +25,9 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.CommandExecutor;
 
 public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
@@ -53,11 +56,19 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
     public int maxSustainedCommands = 5000;
 
+    public int maxBlocks = 1000;
+
     public int sustainedTicks = 100;
 
     public int ticksSustained = 0;
 
     public int maxDistance = 1535;
+
+    public boolean allowHostlessCommands = true;
+
+    public Dictionary<Integer, Integer> sustainedBlocksQuota = new Hashtable<Integer, Integer>();
+
+    public Dictionary<Integer, Integer> maxSustainedBlocks = new Hashtable<Integer, Integer>();
 
 	private LocationType locationType;
 
@@ -103,6 +114,17 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
         maxSustainedCommands = this.getConfig().getInt("maxsustainedcommands");
         sustainedTicks = this.getConfig().getInt("sustainedticks");
         maxDistance = this.getConfig().getInt("maxdistance");
+        maxBlocks = this.getConfig().getInt("maxblocks");
+
+        allowHostlessCommands = this.getConfig().getBoolean("allowhostlesscommands");
+
+        blockLimitList = this.getConfig().getIntegerList("blocklimitlist");
+        blockLimits = this.getConfig().getIntegerList("blocklimits");
+        int size = Math.min(blockLimitList.size(), blockLimits.size());
+        for (int i = 0; i < size; i++) {
+            sustainedBlocksQuota.put(blockLimitList.get(i), 0);
+            maxSustainedBlocks.put(blockLimitList.get(i), blockLimits.get(i));
+        }
 
 		//setup session array
 		sessions = new ArrayList<RemoteSession>();
@@ -270,6 +292,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
             if (sustainedTicks >= ticksSustained) {
                 sustainedTicks = 0;
                 sustainedCommandQuota = 0;
+                sustainedBlocksQuota.replaceAll((block, quota) -> 0);
             }
 			Iterator<RemoteSession> sI = sessions.iterator();
 			while(sI.hasNext()) {
@@ -283,4 +306,218 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 			}
 		}
 	}
+
+    private class McpiCommandExecutor implements CommandExecutor {
+        private final RaspberryJuicePlugin plugin;
+
+        public McpiCommandExecutor(RaspberryJuicePlugin plugin) {
+            this.plugin = plugin;
+        }
+
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+            if (sender instanceof Player && !((Player)sender).hasPermission("mcpi.commands")) {
+                sender.sendMessage("You do not have permission to run this command.");
+                return true;
+            }
+
+            if (args.size() < 1) {
+                return false;
+            }
+
+            boolean set = args[0].equals("set")
+            boolean get = args[0].equals("get");
+
+            if (!set && !get) {
+                return false;
+            }
+
+            String command = args[1];
+
+            if (set) {
+                if (args.size() < 3) {
+                    sender.sendMessage("/mcpi <get/set> <setting-name> [<set-value1> [<set-value2]]");
+                    sender.sendMessage("Settings List:");
+                    sender.sendMessage("maxCommandsPerPlayer");
+                    sender.sendMessage("maxCommandsPerTick");
+                    sender.sendMessage("maxSustainedCommands");
+                    sender.sendMessage("sustainedTicks");
+                    sender.sendMessage("maxDistance");
+                    sender.sendMessage("maxBlocks");
+                    sender.sendMessage("allowHostlessCommands");
+                    sender.sendMessage("blockLimits");
+                    return true;
+                }
+                
+                String command = args[1];
+                int value;
+
+                get = true;
+
+
+                if (command.equals("maxCommandsPerPlayer")) {
+                    try {
+                        value = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.maxCommandsPerPlayer = value;
+
+                } else if (command.equals("maxCommandsPerTick")) {
+                    try {
+                        value = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.maxCommandsPerTick = value;
+
+                } else if (command.equals("maxSustainedCommands")) {
+                    try {
+                        value = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.maxSustainedCommands = value;
+
+                } else if (command.equals("sustainedTicks")) {
+                    try {
+                        value = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.sustainedTicks = value;
+
+                } else if (command.equals("maxDistance")) {
+                    try {
+                        value = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.maxDistance = value;
+
+                } else if (command.equals("maxBlocks")) {
+                    try {
+                        value = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.maxBlocks = value;
+
+                } else if (command.equals("allowHostlessCommands")) {
+                    try {
+                        value = Boolean.parseBoolean(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    plugin.allowHostlessCommands = value;
+
+                } else if (command.equals("allowHostlessCommands")) {
+                    sender.sendMessage("Allow API calls when no Players are Logged In: " + plugin.allowHostlessCommands);
+
+                } else if (command.equals("blockLimits")) {
+                    if (args.size() < 4) {
+                        return false
+                    } 
+
+                    int blockid;
+                    try {
+                        blockid = Integer.parseInt(args[2]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[2]);
+                        return true;
+                    }
+                    try {
+                        value = Integer.parseInt(args[3]);
+                    } catch (Exception e) {
+                        sender.sendMessage("Invalid parameter: " + args[3]);
+                        return true;
+                    }
+
+                    plugin.maxSustainedBlocks.put(blockid, value);
+                    
+                } else {
+                    return false;
+                }
+            }
+            
+            if (get) {
+                if (args.size() < 2) {
+                    sender.sendMessage("/mcpi <get/set> <setting-name> [<set-value1> [<set-value2]]");
+                    sender.sendMessage("Settings List:");
+                    sender.sendMessage("maxCommandsPerPlayer");
+                    sender.sendMessage("maxCommandsPerTick");
+                    sender.sendMessage("maxSustainedCommands");
+                    sender.sendMessage("sustainedTicks");
+                    sender.sendMessage("maxDistance");
+                    sender.sendMessage("maxBlocks");
+                    sender.sendMessage("allowHostlessCommands");
+                    sender.sendMessage("blockLimits");
+                    return true;
+                }
+                
+                String command = args[1];
+
+                if (command.equals("maxCommandsPerPlayer")) {
+                    sender.sendMessage("Max Commands per Player per Tick: " + plugin.maxCommandsPerPlayer);
+                    return true;
+
+                } else if (command.equals("maxCommandsPerTick")) {
+                    sender.sendMessage("Max Commands per Tick: " + plugin.maxCommandsPerTick);
+                    return true;
+
+                } else if (command.equals("maxSustainedCommands")) {
+                    sender.sendMessage("Max Commands per Sustained Period: " + plugin.maxSustainedCommands);
+                    return true;
+
+                } else if (command.equals("sustainedTicks")) {
+                    sender.sendMessage("Ticks per Sustained Period: " + plugin.sustainedTicks);
+                    return true;
+
+                } else if (command.equals("maxDistance")) {
+                    sender.sendMessage("Maximum Radius from Player or Spawn to Teleport or Place Blocks: " + plugin.maxDistance);
+                    return true;
+
+                } else if (command.equals("maxBlocks")) {
+                    sender.sendMessage("Maximum Number of Blocks in a setBlocks command: " + plugin.maxBlocks);
+                    return true;
+
+                } else if (command.equals("allowHostlessCommands")) {
+                    sender.sendMessage("Allow API calls when no Players are Logged In: " + plugin.allowHostlessCommands);
+                    return true;
+
+                } else if (command.equals("blockLimits")) {
+                    if (args.size() == 2) {
+                        sender.sendMessage("Block Specific Limits per Sustained Period"); 
+                        plugin.maxSustainedBlocks.forEach(
+                                (blockid, limit) -> sender.sendMessage("Block:" + blockid + " Limit:" + limit));
+                    } else {
+                        sender.sendMessage("Block Specific Limits per Sustained Period");
+                        int blockid;
+                        try {
+                            blockid = Integer.parseInt(args[2]);
+                        } catch (Exception e) {
+                            sender.sendMessage("Invalid parameter: " + args[2]);
+                            return true;
+                        }
+                        if (plugin.maxSustainedBlocks.containsKey(blockid)) {
+                            sender.sendMessage("Block Specific Limits per Sustained Period"); 
+                            sender.sendMessage("Block:" + blockid + " Limit:" + plugin.maxSustainedBlocks.get(blockid));
+                        } else {
+                            sender.sendMessage("No Block Specific Limit for Block:" + blockid);
+                        }
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
 }

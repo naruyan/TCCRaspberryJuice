@@ -147,10 +147,24 @@ public class RemoteSession {
 					throw new IllegalArgumentException("Unknown location type " + locationType);
 			}
 		}
+
+        Player player = getCurrentPlayer();
+
+        if (player == null && inQueue.size() > 0 && !plugin.allowHostlessCommands) {
+            inQueue.clear();
+            plugin.getLogger().info("Hostless API Calls disabled, ignoring commands");
+            return;
+        } else if (!player.hasPermission("mcpi.api")) {
+            inQueue.clear();
+            plugin.getLogger().info("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
+            server.broadcastMessage("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
+            return;
+        }
+
+
 		String message;
         Server server = plugin.getServer();
 		while ((message = inQueue.poll()) != null) {
-			handleLine(message);
 
 			plugin.commandQuota++;
             if (plugin.commandQuota >= plugin.maxCommandsPerTick) {
@@ -168,19 +182,21 @@ public class RemoteSession {
 				break;
             }
 
-            if (attachedPlayer != null)
+            if (player != null)
             {
-                plugin.perPlayerCommandQuota.put(attachedPlayer.getPlayerListName(), 
-                        plugin.perPlayerCommandQuota.getOrDefault(attachedPlayer.getPlayerListName(), 0) + 1);
-                if (plugin.perPlayerCommandQuota.get(attachedPlayer.getPlayerListName()) >= plugin.maxCommandsPerPlayer) {
-                    plugin.getLogger().warning(attachedPlayer.getPlayerListName() + " has over " 
+                plugin.perPlayerCommandQuota.put(player.getPlayerListName(), 
+                        plugin.perPlayerCommandQuota.getOrDefault(player.getPlayerListName(), 0) + 1);
+                if (plugin.perPlayerCommandQuota.get(player.getPlayerListName()) >= plugin.maxCommandsPerPlayer) {
+                    plugin.getLogger().warning(player.getPlayerListName() + " has over " 
                             + plugin.maxCommandsPerPlayer + " commands queued - deferring "
                             + inQueue.size() + " to next tick");
-                    server.broadcastMessage(attachedPlayer.getPlayerListName()
+                    server.broadcastMessage(player.getPlayerListName()
                             + " has too many commands on the server right now, deferring");
                     break;
                 }
             }
+
+			handleLine(message);
 		}
 
 		if (!running && inQueue.size() <= 0) {
@@ -256,8 +272,17 @@ public class RemoteSession {
 			// world.setBlock
 			} else if (c.equals("world.setBlock")) {
                 if (distanceWithinLimit(args[0], args[1], args[2])) {
-                    Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
-                    updateBlock(world, loc, Integer.parseInt(args[3]), (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
+                    int blockType = Integer.parseInt(args[3]);
+                    int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1)
+                    if (quota < plugin.maxSustainedBlocks.getOrDefault(blockType, 0)) {
+                        Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
+                        if (quota >= 0) {
+                            plugin.sustainedBlocksQuota.put(blockType, quota + 1);
+                        }
+                        updateBlock(world, loc, blockid, (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
+                    } else {
+                        server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
+                    }
                 } else {
                     server.broadcastMessage("Block too far away, command failed.");
                 }
@@ -270,7 +295,12 @@ public class RemoteSession {
                     Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
                     int blockType = Integer.parseInt(args[6]);
                     byte data = args.length > 7? Byte.parseByte(args[7]) : (byte) 0;
-                    setCuboid(loc1, loc2, blockType, data);
+                    int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1)
+                    if (quota < plugin.maxSustainedBlocks.getOrDefault(blockType, 0)) {
+                        setCuboid(loc1, loc2, blockType, data);
+                    } else {
+                        server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
+                    }
                 } else {
                     server.broadcastMessage("Block too far away, command failed.");
                 }
@@ -296,7 +326,7 @@ public class RemoteSession {
 				if (p != null) {
 					send(p.getEntityId());
 				} else {
-					plugin.getLogger().info("Player [" + args[0] + "] not found.");
+					server.broadcastMessage("Player [" + args[0] + "] not found.");
 					send("Fail");
 				}
 				
@@ -304,7 +334,7 @@ public class RemoteSession {
 			} else if (c.equals("entity.getName")) {
 				Entity e = plugin.getEntity(Integer.parseInt(args[0]));
 				if (e == null) {
-					plugin.getLogger().info("Player (or Entity) [" + args[0] + "] not found in entity.getName.");
+					server.broadcastMessage("Player (or Entity) [" + args[0] + "] not found in entity.getName.");
 				} else if (e instanceof Player) {
 					Player p = (Player) e;
 					//sending list name because plugin.getNamedPlayer() uses list name
@@ -834,15 +864,19 @@ public class RemoteSession {
 		maxZ = pos1.getBlockZ() >= pos2.getBlockZ() ? pos1.getBlockZ() : pos2.getBlockZ();
         
         int totalBlocks = (maxX - minX) * (maxY - minY) * (maxZ - minZ);
-
-        for(int y = maxY; y >= minY; y--) {
-            for(int z = maxZ; z >= minZ; z--) {
-                for(int x = maxX; x >= minX; x++) {
-                    String command = "world.setBlock(" + x + "," + y + "," + z + "," + blockType + "," + data + ")";
-                    inQueue.push(command);
-				}
-			}
-		}
+        
+        if (totalBlocks <= plugin.maxBlocks) {
+            for(int y = maxY; y >= minY; y--) {
+                for(int z = maxZ; z >= minZ; z--) {
+                    for(int x = maxX; x >= minX; x++) {
+                        String command = "world.setBlock(" + x + "," + y + "," + z + "," + blockType + "," + data + ")";
+                        inQueue.push(command);
+                    }
+                }
+            }
+        } else {
+            server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
+        }
 	}
 
 	// get a cuboid of lots of blocks

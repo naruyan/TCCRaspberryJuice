@@ -5,3 +5,25 @@ main: net.zhuoweizhang.raspberryjuice.RaspberryJuicePlugin
 name: TCCRaspberryJuice
 startup: postworld
 version: '1.0.0'
+
+commands:
+    mcpi:
+        description: This is a command to control the configuration and limits of the mcpi API handling
+        usage: /mcpi <get/set> <setting-name> [<set-value1> [<set-value2]]
+        permission: TCCRaspberryJuice.commands
+        permission-message: You don't have permission to edit mcpi settings
+
+permissions:
+    mcpi.*:
+        description: Allows full access to mcpi
+        children:
+            mcpi.api: true
+            mcpi.commands: true
+
+    mcpi.api:
+        description: Allows you to send mcpi API commands
+        default: true
+
+    mcpi.commands:
+        description: Allows you to edit mcpi settings
+        default: true
