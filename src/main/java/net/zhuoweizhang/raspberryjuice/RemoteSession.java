@@ -149,22 +149,23 @@ public class RemoteSession {
 		}
 
         Player player = getCurrentPlayer();
+        Server server = plugin.getServer();
 
         if (player == null && inQueue.size() > 0 && !plugin.allowHostlessCommands) {
             inQueue.clear();
             plugin.getLogger().info("Hostless API Calls disabled, ignoring commands");
             return;
-        } else if (!player.hasPermission("mcpi.api")) {
+        } /*else if (!player.hasPermission("mcpi.api")) {
             inQueue.clear();
             plugin.getLogger().info("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
             server.broadcastMessage("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
             return;
-        }
+        }*/
 
 
 		String message;
-        Server server = plugin.getServer();
 		while ((message = inQueue.poll()) != null) {
+			handleLine(message);
 
 			plugin.commandQuota++;
             if (plugin.commandQuota >= plugin.maxCommandsPerTick) {
@@ -195,8 +196,6 @@ public class RemoteSession {
                     break;
                 }
             }
-
-			handleLine(message);
 		}
 
 		if (!running && inQueue.size() <= 0) {
@@ -273,13 +272,13 @@ public class RemoteSession {
 			} else if (c.equals("world.setBlock")) {
                 if (distanceWithinLimit(args[0], args[1], args[2])) {
                     int blockType = Integer.parseInt(args[3]);
-                    int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1)
+                    int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1);
                     if (quota < plugin.maxSustainedBlocks.getOrDefault(blockType, 0)) {
                         Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
                         if (quota >= 0) {
                             plugin.sustainedBlocksQuota.put(blockType, quota + 1);
                         }
-                        updateBlock(world, loc, blockid, (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
+                        updateBlock(world, loc, blockType, (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
                     } else {
                         server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
                     }
@@ -294,8 +293,8 @@ public class RemoteSession {
                     Location loc1 = parseRelativeBlockLocation(args[0], args[1], args[2]);
                     Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
                     int blockType = Integer.parseInt(args[6]);
-                    byte data = args.length > 7? Byte.parseByte(args[7]) : (byte) 0;
-                    int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1)
+                    byte data = args.length > 7 ? Byte.parseByte(args[7]) : (byte) 0;
+                    int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1);
                     if (quota < plugin.maxSustainedBlocks.getOrDefault(blockType, 0)) {
                         setCuboid(loc1, loc2, blockType, data);
                     } else {
@@ -875,6 +874,7 @@ public class RemoteSession {
                 }
             }
         } else {
+            Server server = plugin.getServer();
             server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
         }
 	}
@@ -999,6 +999,10 @@ public class RemoteSession {
 	private Location parseLocation(World world, int x, int y, int z, int originX, int originY, int originZ) {
 		return new Location(world, originX + x, originY + y, originZ + z);
 	}
+
+    private boolean distanceWithinLimit(String x, String y, String z) {
+        return distanceWithinLimit(Double.parseDouble(x), Double.parseDouble(y), Double.parseDouble(z));
+    }
 
     private boolean distanceWithinLimit(double x, double y, double z) {
         Player player = getCurrentPlayer();

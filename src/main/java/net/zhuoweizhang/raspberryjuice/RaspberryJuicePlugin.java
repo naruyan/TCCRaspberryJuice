@@ -7,7 +7,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.Dictionary;
 import java.util.Hashtable;
 
 import org.bukkit.Bukkit;
@@ -44,7 +43,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
 	public Player hostPlayer = null;
 
-    public Dictionary<String, Integer> perPlayerCommandQuota = new Hashtable<String, Integer>();
+    public Hashtable<String, Integer> perPlayerCommandQuota = new Hashtable<String, Integer>();
 
     public int commandQuota = 0;
 
@@ -66,9 +65,9 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
     public boolean allowHostlessCommands = true;
 
-    public Dictionary<Integer, Integer> sustainedBlocksQuota = new Hashtable<Integer, Integer>();
+    public Hashtable<Integer, Integer> sustainedBlocksQuota = new Hashtable<Integer, Integer>();
 
-    public Dictionary<Integer, Integer> maxSustainedBlocks = new Hashtable<Integer, Integer>();
+    public Hashtable<Integer, Integer> maxSustainedBlocks = new Hashtable<Integer, Integer>();
 
 	private LocationType locationType;
 
@@ -118,8 +117,8 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
         allowHostlessCommands = this.getConfig().getBoolean("allowhostlesscommands");
 
-        blockLimitList = this.getConfig().getIntegerList("blocklimitlist");
-        blockLimits = this.getConfig().getIntegerList("blocklimits");
+        List<Integer> blockLimitList = this.getConfig().getIntegerList("blocklimitlist");
+        List<Integer> blockLimits = this.getConfig().getIntegerList("blocklimits");
         int size = Math.min(blockLimitList.size(), blockLimits.size());
         for (int i = 0; i < size; i++) {
             sustainedBlocksQuota.put(blockLimitList.get(i), 0);
@@ -318,26 +317,26 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 
         @Override
         public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-            if (sender instanceof Player && !((Player)sender).hasPermission("mcpi.commands")) {
+            /*if (sender instanceof Player && !((Player)sender).hasPermission("mcpi.commands")) {
                 sender.sendMessage("You do not have permission to run this command.");
                 return true;
-            }
+            }*/
 
-            if (args.size() < 1) {
+            if (args.length < 1) {
                 return false;
             }
 
-            boolean set = args[0].equals("set")
+            boolean set = args[0].equals("set");
             boolean get = args[0].equals("get");
 
             if (!set && !get) {
                 return false;
             }
 
-            String command = args[1];
+            String cmd = args[1];
 
             if (set) {
-                if (args.size() < 3) {
+                if (args.length < 3) {
                     sender.sendMessage("/mcpi <get/set> <setting-name> [<set-value1> [<set-value2]]");
                     sender.sendMessage("Settings List:");
                     sender.sendMessage("maxCommandsPerPlayer");
@@ -351,13 +350,13 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 
-                String command = args[1];
                 int value;
+                boolean bValue;
 
                 get = true;
 
 
-                if (command.equals("maxCommandsPerPlayer")) {
+                if (cmd.equals("maxCommandsPerPlayer")) {
                     try {
                         value = Integer.parseInt(args[2]);
                     } catch (Exception e) {
@@ -366,7 +365,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     }
                     plugin.maxCommandsPerPlayer = value;
 
-                } else if (command.equals("maxCommandsPerTick")) {
+                } else if (cmd.equals("maxCommandsPerTick")) {
                     try {
                         value = Integer.parseInt(args[2]);
                     } catch (Exception e) {
@@ -375,7 +374,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     }
                     plugin.maxCommandsPerTick = value;
 
-                } else if (command.equals("maxSustainedCommands")) {
+                } else if (cmd.equals("maxSustainedCommands")) {
                     try {
                         value = Integer.parseInt(args[2]);
                     } catch (Exception e) {
@@ -384,7 +383,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     }
                     plugin.maxSustainedCommands = value;
 
-                } else if (command.equals("sustainedTicks")) {
+                } else if (cmd.equals("sustainedTicks")) {
                     try {
                         value = Integer.parseInt(args[2]);
                     } catch (Exception e) {
@@ -393,7 +392,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     }
                     plugin.sustainedTicks = value;
 
-                } else if (command.equals("maxDistance")) {
+                } else if (cmd.equals("maxDistance")) {
                     try {
                         value = Integer.parseInt(args[2]);
                     } catch (Exception e) {
@@ -402,7 +401,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     }
                     plugin.maxDistance = value;
 
-                } else if (command.equals("maxBlocks")) {
+                } else if (cmd.equals("maxBlocks")) {
                     try {
                         value = Integer.parseInt(args[2]);
                     } catch (Exception e) {
@@ -411,21 +410,21 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     }
                     plugin.maxBlocks = value;
 
-                } else if (command.equals("allowHostlessCommands")) {
+                } else if (cmd.equals("allowHostlessCommands")) {
                     try {
-                        value = Boolean.parseBoolean(args[2]);
+                        bValue = Boolean.parseBoolean(args[2]);
                     } catch (Exception e) {
                         sender.sendMessage("Invalid parameter: " + args[2]);
                         return true;
                     }
-                    plugin.allowHostlessCommands = value;
+                    plugin.allowHostlessCommands = bValue;
 
-                } else if (command.equals("allowHostlessCommands")) {
+                } else if (cmd.equals("allowHostlessCommands")) {
                     sender.sendMessage("Allow API calls when no Players are Logged In: " + plugin.allowHostlessCommands);
 
-                } else if (command.equals("blockLimits")) {
-                    if (args.size() < 4) {
-                        return false
+                } else if (cmd.equals("blockLimits")) {
+                    if (args.length < 4) {
+                        return false;
                     } 
 
                     int blockid;
@@ -450,7 +449,7 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
             }
             
             if (get) {
-                if (args.size() < 2) {
+                if (args.length < 2) {
                     sender.sendMessage("/mcpi <get/set> <setting-name> [<set-value1> [<set-value2]]");
                     sender.sendMessage("Settings List:");
                     sender.sendMessage("maxCommandsPerPlayer");
@@ -464,38 +463,36 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 
-                String command = args[1];
-
-                if (command.equals("maxCommandsPerPlayer")) {
+                if (cmd.equals("maxCommandsPerPlayer")) {
                     sender.sendMessage("Max Commands per Player per Tick: " + plugin.maxCommandsPerPlayer);
                     return true;
 
-                } else if (command.equals("maxCommandsPerTick")) {
+                } else if (cmd.equals("maxCommandsPerTick")) {
                     sender.sendMessage("Max Commands per Tick: " + plugin.maxCommandsPerTick);
                     return true;
 
-                } else if (command.equals("maxSustainedCommands")) {
+                } else if (cmd.equals("maxSustainedCommands")) {
                     sender.sendMessage("Max Commands per Sustained Period: " + plugin.maxSustainedCommands);
                     return true;
 
-                } else if (command.equals("sustainedTicks")) {
+                } else if (cmd.equals("sustainedTicks")) {
                     sender.sendMessage("Ticks per Sustained Period: " + plugin.sustainedTicks);
                     return true;
 
-                } else if (command.equals("maxDistance")) {
+                } else if (cmd.equals("maxDistance")) {
                     sender.sendMessage("Maximum Radius from Player or Spawn to Teleport or Place Blocks: " + plugin.maxDistance);
                     return true;
 
-                } else if (command.equals("maxBlocks")) {
+                } else if (cmd.equals("maxBlocks")) {
                     sender.sendMessage("Maximum Number of Blocks in a setBlocks command: " + plugin.maxBlocks);
                     return true;
 
-                } else if (command.equals("allowHostlessCommands")) {
+                } else if (cmd.equals("allowHostlessCommands")) {
                     sender.sendMessage("Allow API calls when no Players are Logged In: " + plugin.allowHostlessCommands);
                     return true;
 
-                } else if (command.equals("blockLimits")) {
-                    if (args.size() == 2) {
+                } else if (cmd.equals("blockLimits")) {
+                    if (args.length == 2) {
                         sender.sendMessage("Block Specific Limits per Sustained Period"); 
                         plugin.maxSustainedBlocks.forEach(
                                 (blockid, limit) -> sender.sendMessage("Block:" + blockid + " Limit:" + limit));
