@@ -34,7 +34,10 @@ blocklimitlist: [46]
 blocklimits: [50]
 
 # Maximum size for a single block command
-maxblocks: 1000
+maxblocks: 100000
+
+# Maximum postToChat in a sustained period
+maxsustainedchat: 20
 
 # Whether or not you can execute API commands when no player is present
 allowhostlesscommands: true

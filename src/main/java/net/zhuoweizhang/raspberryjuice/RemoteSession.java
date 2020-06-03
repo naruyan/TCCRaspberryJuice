@@ -154,13 +154,14 @@ public class RemoteSession {
         if (player == null && inQueue.size() > 0 && !plugin.allowHostlessCommands) {
             inQueue.clear();
             plugin.getLogger().info("Hostless API Calls disabled, ignoring commands");
+            kick("Hostless API Calls disabled");
             return;
-        } /*else if (!player.hasPermission("mcpi.api")) {
+        } else if (!player.hasPermission("mcpi.api")) {
             inQueue.clear();
             plugin.getLogger().info("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
-            server.broadcastMessage("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
+            kick("Player " + player.getPlayerListName() + " does not have permission to run API calls");
             return;
-        }*/
+        }
 
 
 		String message;
@@ -171,7 +172,6 @@ public class RemoteSession {
             if (plugin.commandQuota >= plugin.maxCommandsPerTick) {
 				plugin.getLogger().warning("Over " + plugin.maxCommandsPerTick +
 					" commands were queued - deferring " + inQueue.size() + " to next tick");
-                server.broadcastMessage("Too many commands on the server right now, deferring");
 				break;
             }
 
@@ -179,7 +179,6 @@ public class RemoteSession {
             if (plugin.sustainedCommandQuota >= plugin.maxSustainedCommands) {
 				plugin.getLogger().warning("Over " + plugin.maxSustainedCommands +
 					" commands were queued over a long period - deferring " + inQueue.size() + " to next tick");
-                server.broadcastMessage("Too many commands on the server over a period of time, deferring");
 				break;
             }
 
@@ -191,8 +190,6 @@ public class RemoteSession {
                     plugin.getLogger().warning(player.getPlayerListName() + " has over " 
                             + plugin.maxCommandsPerPlayer + " commands queued - deferring "
                             + inQueue.size() + " to next tick");
-                    server.broadcastMessage(player.getPlayerListName()
-                            + " has too many commands on the server right now, deferring");
                     break;
                 }
             }
@@ -242,7 +239,6 @@ public class RemoteSession {
                     Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
                     send(world.getBlockTypeIdAt(loc));
                 } else {
-                    server.broadcastMessage("Block too far away, command failed.");
 					send("Fail");
                 }
 				
@@ -254,7 +250,6 @@ public class RemoteSession {
                     Location loc2 = parseRelativeBlockLocation(args[3], args[4], args[5]);
                     send(getBlocks(loc1, loc2));
                 } else {
-                    server.broadcastMessage("Block too far away, command failed.");
 					send("Fail");
                 }
 				
@@ -264,7 +259,6 @@ public class RemoteSession {
                     Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
                     send(world.getBlockTypeIdAt(loc) + "," + world.getBlockAt(loc).getData());
                 } else {
-                    server.broadcastMessage("Block too far away, command failed.");
 					send("Fail");
                 }
 				
@@ -279,12 +273,8 @@ public class RemoteSession {
                             plugin.sustainedBlocksQuota.put(blockType, quota + 1);
                         }
                         updateBlock(world, loc, blockType, (args.length > 4? Byte.parseByte(args[4]) : (byte) 0));
-                    } else {
-                        server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
-                    }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                    } 
+                } 
 				
 			// world.setBlocks
 			} else if (c.equals("world.setBlocks")) {
@@ -297,12 +287,8 @@ public class RemoteSession {
                     int quota = plugin.sustainedBlocksQuota.getOrDefault(blockType, -1);
                     if (quota < plugin.maxSustainedBlocks.getOrDefault(blockType, 0)) {
                         setCuboid(loc1, loc2, blockType, data);
-                    } else {
-                        server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 				
 			// world.getPlayerIds
 			} else if (c.equals("world.getPlayerIds")) {
@@ -325,16 +311,13 @@ public class RemoteSession {
 				if (p != null) {
 					send(p.getEntityId());
 				} else {
-					server.broadcastMessage("Player [" + args[0] + "] not found.");
 					send("Fail");
 				}
 				
 			// entity.getListName
 			} else if (c.equals("entity.getName")) {
 				Entity e = plugin.getEntity(Integer.parseInt(args[0]));
-				if (e == null) {
-					server.broadcastMessage("Player (or Entity) [" + args[0] + "] not found in entity.getName.");
-				} else if (e instanceof Player) {
+			    if (e instanceof Player) {
 					Player p = (Player) e;
 					//sending list name because plugin.getNamedPlayer() uses list name
 					send(p.getPlayerListName());
@@ -376,6 +359,17 @@ public class RemoteSession {
 			// chat.post
 			} else if (c.equals("chat.post")) {
 				//create chat message from args as it was split by ,
+
+                Player player = getCurrentPlayer();
+                if (player != null)
+                {
+                    plugin.perPlayerChatQuota.put(player.getPlayerListName(), 
+                            plugin.perPlayerChatQuota.getOrDefault(player.getPlayerListName(), 0) + 1);
+                    if (plugin.perPlayerChatQuota.get(player.getPlayerListName()) >= plugin.maxSustainedChat) {
+                        return;
+                    }
+                }
+
 				String chatMessage = "";
 				int count;
 				for(count=0;count<args.length;count++){
@@ -443,9 +437,7 @@ public class RemoteSession {
                         Location loc = currentPlayer.getLocation();
                         currentPlayer.teleport(parseRelativeBlockLocation(x, y, z, loc.getPitch(), loc.getYaw()));
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 				
 			// player.getAbsPos
 			} else if (c.equals("player.getAbsPos")) {
@@ -472,9 +464,7 @@ public class RemoteSession {
                         loc.setZ(Double.parseDouble(z));
                         currentPlayer.teleport(loc);
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 
 			// player.getPos
 			} else if (c.equals("player.getPos")) {
@@ -498,9 +488,7 @@ public class RemoteSession {
                         Location loc = currentPlayer.getLocation();
                         currentPlayer.teleport(parseRelativeLocation(x, y, z, loc.getPitch(), loc.getYaw()));
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 
 			// player.setDirection
 			} else if (c.equals("player.setDirection")) {
@@ -668,9 +656,7 @@ public class RemoteSession {
                         plugin.getLogger().info("Entity [" + args[0] + "] not found.");
                         send("Fail");
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 
 			// entity.getPos
 			} else if (c.equals("entity.getPos")) {
@@ -697,9 +683,7 @@ public class RemoteSession {
                     } else {
                         plugin.getLogger().info("Entity [" + args[0] + "] not found.");
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 
 			// entity.setDirection
 			} else if (c.equals("entity.setDirection")) {
@@ -809,9 +793,7 @@ public class RemoteSession {
                         }
                         sign.update();
                     }
-                } else {
-                    server.broadcastMessage("Block too far away, command failed.");
-                }
+                } 
 			
 			// world.spawnEntity
 			} else if (c.equals("world.spawnEntity")) {
@@ -820,7 +802,6 @@ public class RemoteSession {
                     Entity entity = world.spawnEntity(loc, EntityType.fromId(Integer.parseInt(args[3])));
                     send(entity.getEntityId());
                 } else {
-                    server.broadcastMessage("Block too far away, command failed.");
                     send("Fail");
                 }
 
@@ -867,15 +848,12 @@ public class RemoteSession {
         if (totalBlocks <= plugin.maxBlocks) {
             for(int y = maxY; y >= minY; y--) {
                 for(int z = maxZ; z >= minZ; z--) {
-                    for(int x = maxX; x >= minX; x++) {
+                    for(int x = maxX; x >= minX; x--) {
                         String command = "world.setBlock(" + x + "," + y + "," + z + "," + blockType + "," + data + ")";
                         inQueue.push(command);
                     }
                 }
             }
-        } else {
-            Server server = plugin.getServer();
-            server.broadcastMessage("Too many of block " + blockType + " placed at once, ignoring");
         }
 	}
 

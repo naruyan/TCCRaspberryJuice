@@ -4,13 +4,13 @@ description: Implementation of the Minecraft PI modding API
 main: net.zhuoweizhang.raspberryjuice.RaspberryJuicePlugin
 name: TCCRaspberryJuice
 startup: postworld
-version: '1.0.1'
+version: '1.0.2'
 
 commands:
     mcpi:
         description: This is a command to control the configuration and limits of the mcpi API handling
         usage: /mcpi <get/set> <setting-name> [<set-value1> [<set-value2]]
-        permission: TCCRaspberryJuice.commands
+        permission: mcpi.commands
         permission-message: You don't have permission to edit mcpi settings
 
 permissions:
