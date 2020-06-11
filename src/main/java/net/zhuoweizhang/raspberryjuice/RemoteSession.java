@@ -797,7 +797,8 @@ public class RemoteSession {
 			
 			// world.spawnEntity
 			} else if (c.equals("world.spawnEntity")) {
-                if (distanceWithinLimit(args[0], args[1], args[2])) {
+				Player currentPlayer = getCurrentPlayer();
+                if (currentPlayer != null && currentPlayer.hasPermission("mcpi.spawn") && distanceWithinLimit(args[0], args[1], args[2])) {
                     Location loc = parseRelativeBlockLocation(args[0], args[1], args[2]);
                     Entity entity = world.spawnEntity(loc, EntityType.fromId(Integer.parseInt(args[3])));
                     send(entity.getEntityId());

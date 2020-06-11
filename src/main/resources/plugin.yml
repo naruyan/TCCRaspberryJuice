@@ -4,7 +4,7 @@ description: Implementation of the Minecraft PI modding API
 main: net.zhuoweizhang.raspberryjuice.RaspberryJuicePlugin
 name: TCCRaspberryJuice
 startup: postworld
-version: '1.0.2'
+version: '1.0.3'
 
 commands:
     mcpi:
@@ -18,12 +18,18 @@ permissions:
         description: Allows full access to mcpi
         children:
             mcpi.api: true
+            mcpi.spawn: true
             mcpi.commands: true
 
     mcpi.api:
         description: Allows you to send mcpi API commands
         default: true
 
+    mcpi.spawn:
+        description: Allows you to send spawnEntity mcpi API commands
+        default: false
+
     mcpi.commands:
         description: Allows you to edit mcpi settings
         default: true
+
