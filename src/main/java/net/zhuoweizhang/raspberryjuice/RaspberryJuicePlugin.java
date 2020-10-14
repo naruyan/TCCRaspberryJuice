@@ -11,8 +11,10 @@ import java.util.Hashtable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.Server;
 import org.bukkit.World;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -64,6 +66,10 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
     public int maxDistance = 1535;
 
     public int maxSustainedChat = 20;
+
+    public boolean rectify = false;
+
+    public List<int[]> rectifyBlocks;
 
     public Hashtable<String, Integer> perPlayerChatQuota = new Hashtable<String, Integer>();
 
@@ -158,9 +164,9 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 	@EventHandler
 	public void PlayerJoin(PlayerJoinEvent event) {
 		Player p = event.getPlayer();
-		//p.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, Integer.MAX_VALUE, 2, true, false));	// give night vision power
-		Server server = getServer();
-		server.broadcastMessage("Welcome " + p.getPlayerListName());
+        p.setGameMode(GameMode.CREATIVE);
+		//Server server = getServer();
+		//server.broadcastMessage("Welcome " + p.getPlayerListName());
 	}
 
 	@EventHandler(ignoreCancelled=true)
@@ -311,6 +317,24 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
 					s.tick();
 				}
 			}
+
+            if (rectify) {
+                int blockQuota = 0;
+                World world = getServer().getWorlds().get(0);
+                getServer().broadcastMessage(Integer.toString(rectifyBlocks.size()));
+                while (blockQuota < 100 && rectifyBlocks.size() > 0) {
+                    int[] loc = rectifyBlocks.remove(0);
+                    Block block = world.getBlockAt(loc[0], loc[1], loc[2]);
+                    int id = block.getTypeId();
+                    if (maxSustainedBlocks.getOrDefault(id, 1) == 0) {
+                        block.setTypeId(0);
+                    }
+                    blockQuota++;
+                }
+                if (rectifyBlocks.size() == 0) {
+                    rectify = false;
+                }
+            }
 		}
 	}
 
@@ -336,7 +360,33 @@ public class RaspberryJuicePlugin extends JavaPlugin implements Listener {
             boolean get = args[0].equals("get");
 
             if (!set && !get) {
-                return false;
+                if (!args[0].equals("rectify")) {
+                    return false;
+                }
+                else if (args.length == 4) {
+                    sender.sendMessage("Rectifying");
+                    int x = Integer.parseInt(args[1]);
+                    int z = Integer.parseInt(args[2]);
+                    int size = Integer.parseInt(args[3]);
+
+                    plugin.rectifyBlocks = new ArrayList<int[]>();
+                    for (int s = 0; s < size; s++) {
+                        for (int i = -s; i <= s; i++) {
+                            for (int j = -s; j <= s; j++) {
+                                if (i != s && i != -s && j != s && j != -s) {
+                                    continue;
+                                }
+                                for(int y = 1; y <= 250; y++) {
+                                    int[] loc = {x+i, y, z+j};
+                                    plugin.rectifyBlocks.add(loc);
+                                }
+                            }
+                        }
+                    }
+
+                    plugin.rectify = true;
+                    return true;
+                }
             }
 
             if (set) {

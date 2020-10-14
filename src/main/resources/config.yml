@@ -28,10 +28,10 @@ sustainedticks: 100
 maxdistance: 1535
 
 # List of all blocks ids to enact a block specific sustained time period block limit
-blocklimitlist: [46]
+blocklimitlist: [46, 90, 119, 255]
 
 # List of all sustained block limits in the order in which the block ids appear in blocklimitlist
-blocklimits: [50]
+blocklimits: [50, 0, 0, 0]
 
 # Maximum size for a single block command
 maxblocks: 100000

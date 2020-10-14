@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.zhuoweizhang</groupId>
     <artifactId>tccraspberryjuice</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <name>TCCRaspberryJuice</name>
     <repositories>
         <repository>
