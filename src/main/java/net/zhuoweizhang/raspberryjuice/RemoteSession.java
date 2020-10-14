@@ -156,7 +156,7 @@ public class RemoteSession {
             plugin.getLogger().info("Hostless API Calls disabled, ignoring commands");
             kick("Hostless API Calls disabled");
             return;
-        } else if (!player.hasPermission("mcpi.api")) {
+        } else if (inQueue.size() > 0 && !player.hasPermission("mcpi.api")) {
             inQueue.clear();
             plugin.getLogger().info("Player " + player.getPlayerListName() + " does not have permission to run API calls, ignoring commands");
             kick("Player " + player.getPlayerListName() + " does not have permission to run API calls");
@@ -644,7 +644,7 @@ public class RemoteSession {
 				
 			// entity.setTile
 			} else if (c.equals("entity.setTile")) {
-                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                if (distanceWithinLimit(args[1], args[2], args[3])) {
                     String x = args[1], y = args[2], z = args[3];
                     //get entity based on id
                     Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
@@ -672,7 +672,7 @@ public class RemoteSession {
 			
 			// entity.setPos
 			} else if (c.equals("entity.setPos")) {
-                if (distanceWithinLimit(args[0], args[1], args[2])) {
+                if (distanceWithinLimit(args[1], args[2], args[3])) {
                     String x = args[1], y = args[2], z = args[3];
                     //get entity based on id
                     Entity entity = plugin.getEntity(Integer.parseInt(args[0]));
